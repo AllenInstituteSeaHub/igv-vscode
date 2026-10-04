@@ -445,6 +445,11 @@ Remaining for the human (subjective): items 5 and 7 below, plus a look at the tr
 
 Automated Marketplace publishing is blocked: creating the Azure DevOps PAT needs an Azure DevOps organisation, which now requires an Azure subscription the Allen account does not have (IT request pending). Open VSX is not set up yet. Interim: the human uploads VSIX files by hand at marketplace.visualstudio.com/manage (publisher `alleninstituteseahub` exists). The release workflow's publish job skips each marketplace whose secret is missing, so it can never fail for lack of a token. Version bumped to **0.1.0** for the first upload; `igv-vscode-0.1.0.vsix` is built by `npm run package` (16 files, ~620 KB, no vsce warnings).
 
+### Release v0.1.0 (2026-10-04)
+
+- Tag `v0.1.0` pushed; Release workflow run 37233050402 succeeded: VSIX built, GitHub Release created with `igv-vscode-0.1.0.vsix` (637 KB) attached (https://github.com/AllenInstituteSeaHub/igv-vscode/releases/tag/v0.1.0).
+- Publish job: VS Marketplace step skipped (no `VSCE_PAT`, as intended; manual upload); "Publish to Open VSX" step reported success. Open VSX namespace `alleninstituteseahub` exists (unverified) — listing visibility being confirmed.
+
 ### Open items for the human before a release
 
 1. ~~Push the repo~~ done; CI green. ~~Publisher id~~ `alleninstituteseahub`.
