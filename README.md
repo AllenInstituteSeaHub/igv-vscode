@@ -84,6 +84,7 @@ Notes: `/data` is read-only, so generated indexes go to `igv.largeFile.derivedDi
 - [docs/settings.md](docs/settings.md): every setting and command
 - [docs/errors.md](docs/errors.md): error codes and hints
 - [docs/troubleshooting.md](docs/troubleshooting.md)
+- [docs/RELEASING.md](docs/RELEASING.md): versioning and publishing
 - [docs/architecture.md](docs/architecture.md), [docs/DECISIONS.md](docs/DECISIONS.md), [PROGRESS.md](PROGRESS.md)
 
 ## Development
@@ -99,7 +100,7 @@ npm run package           # builds the VSIX
 # fixtures (once): python3 -m venv .venv && .venv/bin/pip install pysam pyBigWig numpy && .venv/bin/python scripts/make-fixtures.py
 ```
 
-Press F5 to launch an Extension Development Host. Releases: tag `vX.Y.Z` to build the VSIX and draft a GitHub Release (`.github/workflows/release.yml`); marketplace publishing is a manual, secret-gated step.
+Press F5 to launch an Extension Development Host. Releases: see [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Citation
 
