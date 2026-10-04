@@ -1,7 +1,9 @@
 # Release pipeline (spec §12 M6). Tagging vX.Y.Z builds the VSIX on Linux and
 # attaches it to a GitHub Release. Publishing to the VS Marketplace and Open
-# VSX is a separate, manual step (workflow_dispatch) that needs the
-# VSCE_PAT / OVSX_PAT secrets and a real publisher id in package.json.
+# VSX is a separate, manual step (workflow_dispatch with publish=true); each
+# publish step is skipped when its secret (VSCE_PAT / OVSX_PAT) is not set, so
+# the workflow never fails merely because a token does not exist yet. Until the
+# tokens exist, releases are uploaded by hand at marketplace.visualstudio.com/manage.
 name: Release
 
 on:
@@ -59,6 +61,9 @@ jobs:
     needs: vsix
     if: github.event_name == 'workflow_dispatch' && inputs.publish
     runs-on: ubuntu-latest
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -70,10 +75,15 @@ jobs:
         with:
           name: vsix
       - name: Publish to the VS Marketplace
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        if: env.VSCE_PAT != ''
         run: npx vsce publish --packagePath igv-vscode-*.vsix
+      - name: Skipped VS Marketplace publish (no VSCE_PAT secret)
+        if: env.VSCE_PAT == ''
+        run: echo "VSCE_PAT is not set; upload the VSIX manually at https://marketplace.visualstudio.com/manage"
       - name: Publish to Open VSX
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        if: env.OVSX_PAT != ''
         run: npx ovsx publish igv-vscode-*.vsix
+      - name: Skipped Open VSX publish (no OVSX_PAT secret)
+        if: env.OVSX_PAT == ''
+        run: echo "OVSX_PAT is not set; skipping Open VSX"
+

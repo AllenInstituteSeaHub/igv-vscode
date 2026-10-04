@@ -441,6 +441,10 @@ Remaining for the human (subjective): items 5 and 7 below, plus a look at the tr
 - `contract-and-integration`: the contract tests passed; the `vscode-test` step failed in the first two runs. The workflow now prints a failure summary and uploads `integration.log` as an artifact so a recurrence can be read.
 - **Third run (commit `cecd8d3`, run 37224466595): all six jobs green** — check on ubuntu/macos/windows, contract + VS Code integration on ubuntu (so the earlier integration failure did not reproduce; treat it as flaky until the log of a recurrence says otherwise), code-server e2e on 4.140.0 and 4.102.0.
 
+### Publishing plan (2026-10-04)
+
+Automated Marketplace publishing is blocked: creating the Azure DevOps PAT needs an Azure DevOps organisation, which now requires an Azure subscription the Allen account does not have (IT request pending). Open VSX is not set up yet. Interim: the human uploads VSIX files by hand at marketplace.visualstudio.com/manage (publisher `alleninstituteseahub` exists). The release workflow's publish job skips each marketplace whose secret is missing, so it can never fail for lack of a token. Version bumped to **0.1.0** for the first upload; `igv-vscode-0.1.0.vsix` is built by `npm run package` (16 files, ~620 KB, no vsce warnings).
+
 ### Open items for the human before a release
 
 1. ~~Push the repo~~ done; CI green. ~~Publisher id~~ `alleninstituteseahub`.

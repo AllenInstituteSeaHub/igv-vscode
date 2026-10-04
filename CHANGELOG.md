@@ -4,7 +4,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-Release candidate for 0.1.0. Not yet published; install from the VSIX.
+## [0.1.0] - 2026-10-04
+
+First release. Installed from the VSIX (uploaded by hand to the VS Marketplace until automated publishing is enabled).
 
 ### Added
 - Project scaffold: TypeScript, esbuild bundles (extension, webview, cli), eslint, vitest, CI.
