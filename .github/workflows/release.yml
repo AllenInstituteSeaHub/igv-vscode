@@ -1,9 +1,9 @@
 # Release pipeline (spec §12 M6). Tagging vX.Y.Z builds the VSIX on Linux and
-# attaches it to a GitHub Release. Publishing to the VS Marketplace and Open
-# VSX is a separate, manual step (workflow_dispatch with publish=true); each
-# publish step is skipped when its secret (VSCE_PAT / OVSX_PAT) is not set, so
-# the workflow never fails merely because a token does not exist yet. Until the
-# tokens exist, releases are uploaded by hand at marketplace.visualstudio.com/manage.
+# attaches it to a GitHub Release, then publishes to each marketplace whose
+# secret (VSCE_PAT / OVSX_PAT) is set; a marketplace without a token is skipped
+# with a message, never a failure. The publish job can also be started by hand
+# (workflow_dispatch with publish=true). Marketplaces without a token are
+# published by hand (see docs/RELEASING.md).
 name: Release
 
 on:
@@ -59,7 +59,7 @@ jobs:
 
   publish:
     needs: vsix
-    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.publish)
     runs-on: ubuntu-latest
     env:
       VSCE_PAT: ${{ secrets.VSCE_PAT }}

@@ -56,7 +56,7 @@ Tagging builds the `.vsix` and drafts a release with notes:
 git tag v<version> && git push origin v<version>
 ```
 
-`.github/workflows/release.yml` refuses to run the release job if `publisher` is still a placeholder. Its `publish` job runs only when started by hand (Actions → Release → Run workflow → publish = true) and skips each marketplace whose secret is missing, so it never fails for lack of a token.
+`.github/workflows/release.yml` refuses to run if `publisher` is still a placeholder. After the GitHub Release, its `publish` job publishes to each marketplace whose secret is set and skips the others with a message, so it never fails for lack of a token. The job can also be started by hand (Actions → Release → Run workflow → publish = true).
 
 ## Checklist
 
@@ -64,8 +64,8 @@ git tag v<version> && git push origin v<version>
 2. `npm version <new> --no-git-tag-version`; update `CHANGELOG.md`, `PROGRESS.md`.
 3. Commit and push; wait for CI.
 4. `npm run package`; install locally and smoke-test.
-5. Upload to the VS Marketplace (manual) and Open VSX (manual or `ovsx publish`).
-6. `git tag v<new> && git push origin v<new>` for the GitHub Release.
+5. `git tag v<new> && git push origin v<new>`: builds the VSIX, drafts the GitHub Release, publishes to Open VSX (`OVSX_PAT` is set) and to the VS Marketplace once `VSCE_PAT` exists.
+6. Until `VSCE_PAT` exists, upload the same `.vsix` to the VS Marketplace by hand.
 7. Verify the Marketplace listing renders the README and icon.
 
 ## Secrets and safety
