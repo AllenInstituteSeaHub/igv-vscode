@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""Test shim for a subset of the `tabix` CLI, implemented with pysam/htslib.
+
+Supported:
+  tabix --version
+  tabix -p (vcf|bed|gff|sam) [-f] [-C] FILE.gz           build FILE.gz.tbi (or .csi with -C)
+  tabix -s SEQ -b BEG -e END [-S SKIP] [-0] [-f] FILE.gz  custom columns (1-based, as in tabix)
+  tabix -l FILE.gz                                        list sequence names
+  tabix [-h] FILE.gz REGION [REGION...]                   print overlapping records
+  tabix -H FILE.gz                                        print header lines only
+
+See test/tools/README.md.
+"""
+from __future__ import annotations
+
+import os
+import sys
+
+import pysam
+
+VERSION = "1.21-shim"
+PRESETS = {"vcf", "bed", "gff", "sam", "psltbl"}
+
+
+def die(msg: str, code: int = 1) -> int:
+    print(f"[tabix] {msg}", file=sys.stderr)
+    return code
+
+
+def is_bgzf(path: str) -> bool:
+    try:
+        with open(path, "rb") as fh:
+            magic = fh.read(4)
+    except OSError:
+        return False
+    return magic[:3] == b"\x1f\x8b\x08" and bool(magic[3] & 0x04)
+
+
+def main(argv: list[str]) -> int:
+    preset = None
+    force = csi = list_seqs = header_only = with_header = zero_based = False
+    seq_col = beg_col = end_col = None
+    skip = 0
+    positional: list[str] = []
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+
+        def val() -> str:
+            nonlocal i
+            if i + 1 >= len(argv):
+                raise ValueError(f"option {a} requires an argument")
+            i += 1
+            return argv[i]
+
+        if a == "--version":
+            print(f"tabix (htslib) {VERSION}")
+            print("Copyright (C) 2024 Genome Research Ltd.  (pysam-based test shim)")
+            return 0
+        if a in ("--help",):
+            print(__doc__, file=sys.stderr)
+            return 0
+        if a in ("-p", "--preset"):
+            preset = val()
+        elif a in ("-f", "--force"):
+            force = True
+        elif a in ("-C", "--csi"):
+            csi = True
+        elif a in ("-l", "--list-chroms"):
+            list_seqs = True
+        elif a in ("-H", "--only-header"):
+            header_only = True
+        elif a in ("-h", "--print-header"):
+            with_header = True
+        elif a in ("-0", "--zero-based"):
+            zero_based = True
+        elif a in ("-s", "--sequence"):
+            seq_col = int(val())
+        elif a in ("-b", "--begin"):
+            beg_col = int(val())
+        elif a in ("-e", "--end"):
+            end_col = int(val())
+        elif a in ("-S", "--skip-lines"):
+            skip = int(val())
+        elif a in ("-m", "--min-shift", "-c", "--comment", "-@", "--threads", "-T", "--targets"):
+            val()  # accepted, ignored
+        elif a.startswith("-") and len(a) > 1:
+            print(f"shim: unsupported: tabix {a}", file=sys.stderr)
+            return 2
+        else:
+            positional.append(a)
+        i += 1
+
+    if not positional:
+        print(__doc__, file=sys.stderr)
+        return 1
+    path, regions = positional[0], positional[1:]
+    if not os.path.exists(path):
+        return die(f"{path}: No such file or directory")
+
+    # --- query modes --------------------------------------------------------
+    if list_seqs or header_only or regions or with_header:
+        try:
+            tf = pysam.TabixFile(path)
+        except (OSError, ValueError) as e:
+            return die(f"failed to open {path}: {e} (is it bgzipped and indexed?)")
+        try:
+            if list_seqs:
+                for c in tf.contigs:
+                    print(c)
+                return 0
+            if header_only or with_header:
+                for line in tf.header:
+                    print(line)
+                if header_only:
+                    return 0
+            for r in regions:
+                try:
+                    for line in tf.fetch(region=r):
+                        print(line)
+                except ValueError:
+                    # real tabix silently prints nothing for an unknown contig
+                    continue
+            return 0
+        finally:
+            tf.close()
+
+    # --- index building ------------------------------------------------------
+    if preset is None and seq_col is None:
+        return die("either -p PRESET or -s/-b/-e columns are required to build an index")
+    if preset is not None and preset not in PRESETS:
+        return die(f"unrecognized preset '{preset}'")
+    if not is_bgzf(path):
+        return die(f"{path} was not compressed with bgzip? (not BGZF)")
+    idx = path + (".csi" if csi else ".tbi")
+    if os.path.exists(idx) and not force:
+        return die("the index file exists. Please use '-f' to overwrite.")
+    try:
+        kw = dict(force=True, csi=csi, keep_original=True)
+        if preset is not None:
+            pysam.tabix_index(path, preset=preset, **kw)
+        else:
+            # tabix columns are 1-based; pysam's are 0-based
+            pysam.tabix_index(
+                path, seq_col=seq_col - 1, start_col=beg_col - 1,
+                end_col=(end_col - 1) if end_col else (beg_col - 1),
+                zerobased=zero_based, line_skip=skip, **kw,
+            )
+    except (OSError, ValueError) as e:
+        return die(str(e))
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except ValueError as e:
+        sys.exit(die(str(e)))

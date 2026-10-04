@@ -1,0 +1,12 @@
+{
+  "files.exclude": {
+    "dist": false
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "igv.defaultGenome": "test/fixtures/generated/ref.fa",
+  "igv.tools.paths": {
+    "samtools": "${workspaceFolder}/.venv/bin/samtools",
+    "bgzip": "${workspaceFolder}/.venv/bin/bgzip",
+    "tabix": "${workspaceFolder}/.venv/bin/tabix"
+  }
+}

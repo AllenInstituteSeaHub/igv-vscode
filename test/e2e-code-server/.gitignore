@@ -1,0 +1,3 @@
+# Build context assembled by run.mjs (VSIX + fixtures) and per-run outputs.
+.context/
+out/

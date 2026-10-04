@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""Test shim for a subset of the `bgzip` CLI, implemented with pysam/htslib.
+
+Supported:
+  bgzip --version
+  bgzip [-c] [-f] [-@ N] [-l LEVEL] [FILE]      compress (FILE or stdin)
+  bgzip -d [-c] [-f] [FILE]                     decompress (FILE.gz or stdin)
+
+Without -c and with a FILE, the input is replaced by FILE.gz (or FILE.gz by
+FILE for -d), exactly like the real tool. With no FILE, stdin is compressed
+to stdout. See test/tools/README.md.
+"""
+from __future__ import annotations
+
+import os
+import shutil
+import sys
+import tempfile
+
+import pysam
+
+VERSION = "1.21-shim"
+CHUNK = 1 << 20
+
+
+def die(msg: str, code: int = 1) -> int:
+    print(f"[bgzip] {msg}", file=sys.stderr)
+    return code
+
+
+def stream_to_stdout(path: str) -> None:
+    with open(path, "rb") as fh:
+        out = sys.stdout.buffer
+        while True:
+            buf = fh.read(CHUNK)
+            if not buf:
+                break
+            out.write(buf)
+        out.flush()
+
+
+def stdin_to_tempfile(suffix: str = "") -> str:
+    fd, tmp = tempfile.mkstemp(prefix="bgzip-shim-", suffix=suffix)
+    with os.fdopen(fd, "wb") as fh:
+        shutil.copyfileobj(sys.stdin.buffer, fh, CHUNK)
+    return tmp
+
+
+def decompress_to(src: str, dst: str) -> None:
+    with pysam.BGZFile(src, "rb") as fin, open(dst, "wb") as fout:
+        while True:
+            buf = fin.read(CHUNK)
+            if not buf:
+                break
+            fout.write(buf)
+
+
+def main(argv: list[str]) -> int:
+    to_stdout = force = decompress = False
+    positional: list[str] = []
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a in ("--version",):
+            print(f"bgzip (htslib) {VERSION}")
+            print("Copyright (C) 2024 Genome Research Ltd.  (pysam-based test shim)")
+            return 0
+        if a in ("-h", "--help"):
+            print(__doc__, file=sys.stderr)
+            return 0
+        if a in ("-c", "--stdout"):
+            to_stdout = True
+        elif a in ("-f", "--force"):
+            force = True
+        elif a in ("-d", "--decompress"):
+            decompress = True
+        elif a in ("-@", "--threads", "-l", "--compress-level", "-I", "--index-name"):
+            i += 1  # accepted, ignored
+        elif a in ("-i", "--index", "-k", "--keep"):
+            pass
+        elif a.startswith("-") and len(a) > 1:
+            print(f"shim: unsupported: bgzip {a}", file=sys.stderr)
+            return 2
+        else:
+            positional.append(a)
+        i += 1
+    if len(positional) > 1:
+        return die("only one input file is supported")
+
+    src = positional[0] if positional else None
+    tmp_in = tmp_out = None
+    try:
+        if src is None:  # stdin -> stdout, regardless of -c
+            tmp_in = stdin_to_tempfile(".gz" if decompress else "")
+            src, to_stdout = tmp_in, True
+        elif not os.path.exists(src):
+            return die(f"{src}: No such file or directory")
+
+        if decompress:
+            if to_stdout:
+                tmp_out = tempfile.mkstemp(prefix="bgzip-shim-")[1]
+                decompress_to(src, tmp_out)
+                stream_to_stdout(tmp_out)
+            else:
+                if not src.endswith(".gz"):
+                    return die(f"{src}: unknown suffix -- ignored")
+                dst = src[: -len(".gz")]
+                if os.path.exists(dst) and not force:
+                    return die(f"{dst} already exists; do you wish to overwrite (y or n)? "
+                               "(non-interactive shim: use -f)")
+                decompress_to(src, dst)
+                os.unlink(src)
+            return 0
+
+        # compress
+        if to_stdout:
+            tmp_out = tempfile.mkstemp(prefix="bgzip-shim-", suffix=".gz")[1]
+            pysam.tabix_compress(src, tmp_out, force=True)
+            stream_to_stdout(tmp_out)
+        else:
+            dst = src + ".gz"
+            if os.path.exists(dst) and not force:
+                return die(f"{dst} already exists; do you wish to overwrite (y or n)? "
+                           "(non-interactive shim: use -f)")
+            pysam.tabix_compress(src, dst, force=True)
+            os.unlink(src)
+        return 0
+    except OSError as e:
+        return die(str(e))
+    finally:
+        for t in (tmp_in, tmp_out):
+            if t and os.path.exists(t):
+                os.unlink(t)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

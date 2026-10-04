@@ -1,0 +1,79 @@
+# Release pipeline (spec §12 M6). Tagging vX.Y.Z builds the VSIX on Linux and
+# attaches it to a GitHub Release. Publishing to the VS Marketplace and Open
+# VSX is a separate, manual step (workflow_dispatch) that needs the
+# VSCE_PAT / OVSX_PAT secrets and a real publisher id in package.json.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to marketplaces (requires VSCE_PAT and OVSX_PAT secrets)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  vsix:
+    runs-on: ubuntu-latest
+    outputs:
+      vsix: ${{ steps.pkg.outputs.vsix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run vendor
+      - run: npm run check
+      - name: Package
+        id: pkg
+        run: |
+          npm run package
+          echo "vsix=$(ls igv-vscode-*.vsix)" >> "$GITHUB_OUTPUT"
+      - name: Verify the packaged publisher is not the placeholder
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          pub=$(node -p "require('./package.json').publisher")
+          if [ "$pub" = "igv-vscode-dev" ]; then echo "package.json publisher is still the placeholder" >&2; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: '*.vsix'
+      - name: GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.vsix'
+          generate_release_notes: true
+          body: |
+            Install: `code --install-extension ${{ steps.pkg.outputs.vsix }}` (or `code-server --install-extension …`).
+            See CHANGELOG.md for details.
+
+  publish:
+    needs: vsix
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: vsix
+      - name: Publish to the VS Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx vsce publish --packagePath igv-vscode-*.vsix
+      - name: Publish to Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx ovsx publish igv-vscode-*.vsix

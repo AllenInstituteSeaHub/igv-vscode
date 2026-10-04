@@ -1,0 +1,623 @@
+{
+  "name": "igv-vscode",
+  "displayName": "IGV Viewer for VS Code (unofficial)",
+  "description": "Embed the igv.js genome browser in VS Code. View BAM, CRAM, VCF, bigWig, BED and more next to your code, with a CLI and MCP server for AI agents.",
+  "version": "0.0.1",
+  "publisher": "igv-vscode-dev",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AllenInstituteSeaHub/igv-vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/AllenInstituteSeaHub/igv-vscode/issues"
+  },
+  "homepage": "https://github.com/AllenInstituteSeaHub/igv-vscode#readme",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Data Science"
+  ],
+  "keywords": [
+    "igv",
+    "igv.js",
+    "genome browser",
+    "genomics",
+    "bioinformatics",
+    "bam",
+    "cram",
+    "vcf",
+    "bigwig",
+    "alignment",
+    "sequencing"
+  ],
+  "icon": "media/icon.png",
+  "main": "./dist/extension.js",
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Agent control API disabled in Restricted Mode"
+    },
+    "virtualWorkspaces": false
+  },
+  "activationEvents": [
+    "onStartupFinished",
+    "onWebviewPanel:igv.viewer"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "igv.newViewer",
+        "title": "New Viewer",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.addToViewer",
+        "title": "Add to Viewer",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.openInNewViewer",
+        "title": "Open in New Viewer",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.gotoLocus",
+        "title": "Go to Locus\u2026",
+        "category": "IGV",
+        "icon": "$(search)"
+      },
+      {
+        "command": "igv.setGenome",
+        "title": "Set Genome\u2026",
+        "category": "IGV",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "igv.removeTrack",
+        "title": "Remove Track\u2026",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.showOutput",
+        "title": "Show Output",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.gotoLocusFromSelection",
+        "title": "Go to Locus from Selection",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.saveSession",
+        "title": "Save Session\u2026",
+        "category": "IGV",
+        "icon": "$(save-as)"
+      },
+      {
+        "command": "igv.loadSession",
+        "title": "Load Session\u2026",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.exportSnapshot",
+        "title": "Export Snapshot\u2026",
+        "category": "IGV",
+        "icon": "$(device-camera)"
+      },
+      {
+        "command": "igv.reopenAsText",
+        "title": "Reopen as Text",
+        "category": "IGV",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "igv.loadTrackFromUrl",
+        "title": "Load Track from URL\u2026",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.indexFile",
+        "title": "Index File\u2026",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.subsampleBam",
+        "title": "Subsample BAM\u2026",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.installCli",
+        "title": "Install CLI on PATH",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.copyMcpSetup",
+        "title": "Copy MCP Setup Command",
+        "category": "IGV"
+      },
+      {
+        "command": "igv.addAgentSkill",
+        "title": "Add Agent Skill to Workspace",
+        "category": "IGV"
+      }
+    ],
+    "configuration": {
+      "title": "IGV",
+      "properties": {
+        "igv.defaultGenome": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Genome used when a viewer is opened without an explicit genome, for example `hg38`. Leave empty to be asked each time. Set per workspace."
+        },
+        "igv.genomes.custom": {
+          "type": "array",
+          "default": [],
+          "scope": "resource",
+          "markdownDescription": "User-defined genomes. Each entry needs an `id` and a sequence (`fastaPath`/`fastaURL` or `twoBitPath`/`twoBitURL`); optional `name`, `indexPath`, `cytobandPath`, `aliasPath`, `chromosomeOrder` and `tracks` (array of `{path|url, name}`). Relative paths resolve against the workspace folder.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "fastaPath": {
+                "type": "string"
+              },
+              "fastaURL": {
+                "type": "string"
+              },
+              "indexPath": {
+                "type": "string"
+              },
+              "indexURL": {
+                "type": "string"
+              },
+              "twoBitPath": {
+                "type": "string"
+              },
+              "twoBitURL": {
+                "type": "string"
+              },
+              "cytobandPath": {
+                "type": "string"
+              },
+              "cytobandURL": {
+                "type": "string"
+              },
+              "aliasPath": {
+                "type": "string"
+              },
+              "aliasURL": {
+                "type": "string"
+              },
+              "chromosomeOrder": {
+                "type": [
+                  "string",
+                  "array"
+                ]
+              },
+              "tracks": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "igv.openBehavior": {
+          "type": "string",
+          "enum": [
+            "addToActive",
+            "newViewer"
+          ],
+          "default": "addToActive",
+          "scope": "resource",
+          "enumDescriptions": [
+            "Add files to the active viewer when one exists",
+            "Always open a new viewer"
+          ],
+          "description": "What happens when a data file is opened with IGV while a viewer is already open."
+        },
+        "igv.transport.maxChunkBytes": {
+          "type": "number",
+          "default": 8388608,
+          "minimum": 65536,
+          "scope": "application",
+          "description": "Largest byte range sent from the extension host to the viewer in one message. Larger reads are split into chunks. Requires a window reload to take effect."
+        },
+        "igv.transport.cacheMiB": {
+          "type": "number",
+          "default": 64,
+          "minimum": 0,
+          "scope": "application",
+          "description": "Per-viewer cache of recently read byte ranges, in MiB."
+        },
+        "igv.alignment.visibilityWindow": {
+          "type": "number",
+          "default": 30000,
+          "scope": "resource",
+          "markdownDescription": "Alignment tracks only load reads when the view is narrower than this many base pairs (igv.js default 30000). Wider views show a \u201czoom in\u201d message. Per-track override: `options.visibilityWindow`."
+        },
+        "igv.alignment.samplingDepth": {
+          "type": "number",
+          "default": 100,
+          "scope": "resource",
+          "description": "Maximum reads kept per sampling window in alignment tracks."
+        },
+        "igv.alignment.samplingWindowSize": {
+          "type": "number",
+          "default": 100,
+          "scope": "resource",
+          "description": "Sampling window size (bp) for alignment downsampling."
+        },
+        "igv.variant.visibilityWindow": {
+          "type": "number",
+          "default": 1000000,
+          "scope": "resource",
+          "description": "Variant tracks only load when the view is narrower than this many base pairs."
+        },
+        "igv.largeFile.unindexedMaxBytes": {
+          "type": "number",
+          "default": 20971520,
+          "scope": "resource",
+          "description": "Unindexed BAM/CRAM and uncompressed text files up to this size (bytes) are loaded whole. Larger files need an index."
+        },
+        "igv.agent.snapshotDir": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "description": "Directory for snapshots saved without an explicit path. Relative to the workspace. Default: .igv/snapshots/ in the workspace, falling back to global storage."
+        },
+        "igv.snapshot.scale": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 4,
+          "scope": "resource",
+          "description": "Device scale factor for PNG snapshots."
+        },
+        "igv.tools.paths": {
+          "type": "object",
+          "default": {},
+          "scope": "machine-overridable",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "markdownDescription": "Absolute paths of external tools when they are not on PATH, e.g. `{ \"samtools\": \"/opt/conda/bin/samtools\" }`. `${workspaceFolder}` is substituted. Keys: samtools, bgzip, tabix, bedtools, sort."
+        },
+        "igv.largeFile.derivedDir": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Where generated indexes, compressed copies and subsamples go when the data file's directory is not writable (e.g. `/data` on CodeOcean). Relative paths resolve against the workspace. Default: the extension's global storage."
+        },
+        "igv.remote.mode": {
+          "type": "string",
+          "enum": [
+            "direct",
+            "proxy",
+            "auto"
+          ],
+          "default": "direct",
+          "scope": "resource",
+          "enumDescriptions": [
+            "The viewer (your browser) fetches remote URLs directly; servers need CORS and Range support.",
+            "The extension host fetches byte ranges and relays them; bypasses browser CORS/network limits and uses the host's network.",
+            "Try direct first; on a CORS/network failure retry through the proxy and remember that origin for the session."
+          ],
+          "description": "How http(s) tracks and indexes are fetched."
+        },
+        "igv.remote.allowHttp": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "description": "Allow plain http:// URLs to be fetched directly by the viewer (adds http: to the webview's connect-src). https:// always works. Not needed in proxy mode."
+        },
+        "igv.remote.timeoutMs": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "scope": "resource",
+          "description": "Timeout for proxied remote requests."
+        },
+        "igv.transport.mode": {
+          "type": "string",
+          "enum": [
+            "shim",
+            "webviewUri"
+          ],
+          "default": "shim",
+          "scope": "resource",
+          "enumDescriptions": [
+            "Byte ranges are read by the extension host and sent to the viewer; only files added to a viewer are readable (recommended).",
+            "Experimental: files are served to igv as vscode-resource URLs with HTTP range requests. Needs VS Code / code-server with range support (2026+) and exposes whole directories of added files to the viewer."
+          ],
+          "description": "How local files reach igv.js. Applies to viewers opened after the change."
+        },
+        "igv.agent.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "markdownDescription": "Expose the local control channel used by the `igv-vscode` CLI and MCP server (Unix socket / named pipe, token-authenticated, never a TCP port). Always off in Restricted Mode. Changes take effect after a window reload."
+        }
+      }
+    },
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "igv.addToViewer",
+          "group": "igv@1",
+          "when": "resourceFilename =~ /\\.(bam|cram|bw|bigwig|bb|bigbed|tdf|bed|narrowpeak|broadpeak|gff|gff3|gtf|vcf|bedgraph|bdg|wig|seg|maf|mut|bedpe|interact|gwas|qtl|bp|fa|fasta|fna|2bit)(\\.gz|\\.bgz)?$/i"
+        },
+        {
+          "command": "igv.openInNewViewer",
+          "group": "igv@2",
+          "when": "resourceFilename =~ /\\.(bam|cram|bw|bigwig|bb|bigbed|tdf|bed|narrowpeak|broadpeak|gff|gff3|gtf|vcf|bedgraph|bdg|wig|seg|maf|mut|bedpe|interact|gwas|qtl|bp|fa|fasta|fna|2bit)(\\.gz|\\.bgz)?$/i"
+        },
+        {
+          "command": "igv.loadSession",
+          "group": "igv@3",
+          "when": "resourceFilename =~ /\\.igv\\.json$/i"
+        },
+        {
+          "command": "igv.indexFile",
+          "group": "igv@4",
+          "when": "resourceFilename =~ /\\.(bam|cram|bed|gff|gff3|gtf|vcf|bedgraph|bdg|narrowpeak|broadpeak|fa|fasta|fna)(\\.gz|\\.bgz)?$/i"
+        },
+        {
+          "command": "igv.subsampleBam",
+          "group": "igv@5",
+          "when": "resourceExtname == .bam"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "igv.gotoLocus",
+          "when": "igv.hasViewer"
+        },
+        {
+          "command": "igv.setGenome",
+          "when": "igv.hasViewer"
+        },
+        {
+          "command": "igv.removeTrack",
+          "when": "igv.hasViewer"
+        },
+        {
+          "command": "igv.gotoLocusFromSelection",
+          "when": "igv.hasViewer"
+        },
+        {
+          "command": "igv.saveSession",
+          "when": "igv.hasViewer"
+        },
+        {
+          "command": "igv.exportSnapshot",
+          "when": "igv.hasViewer"
+        },
+        {
+          "command": "igv.reopenAsText",
+          "when": "false"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "igv.gotoLocus",
+          "group": "navigation@1",
+          "when": "activeWebviewPanelId == igv.viewer || activeCustomEditorId == igv.editor || activeCustomEditorId == igv.editorOption"
+        },
+        {
+          "command": "igv.setGenome",
+          "group": "navigation@2",
+          "when": "activeWebviewPanelId == igv.viewer || activeCustomEditorId == igv.editor || activeCustomEditorId == igv.editorOption"
+        },
+        {
+          "command": "igv.exportSnapshot",
+          "group": "navigation@3",
+          "when": "activeWebviewPanelId == igv.viewer || activeCustomEditorId == igv.editor || activeCustomEditorId == igv.editorOption"
+        },
+        {
+          "command": "igv.saveSession",
+          "group": "navigation@4",
+          "when": "activeWebviewPanelId == igv.viewer || activeCustomEditorId == igv.editor || activeCustomEditorId == igv.editorOption"
+        },
+        {
+          "command": "igv.reopenAsText",
+          "group": "navigation@9",
+          "when": "activeCustomEditorId == igv.editor || activeCustomEditorId == igv.editorOption"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "igv.gotoLocusFromSelection",
+          "group": "igv@1",
+          "when": "igv.hasViewer && editorTextFocus"
+        }
+      ]
+    },
+    "customEditors": [
+      {
+        "viewType": "igv.editor",
+        "displayName": "IGV Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.bam"
+          },
+          {
+            "filenamePattern": "*.cram"
+          },
+          {
+            "filenamePattern": "*.bw"
+          },
+          {
+            "filenamePattern": "*.bigwig"
+          },
+          {
+            "filenamePattern": "*.bigWig"
+          },
+          {
+            "filenamePattern": "*.bb"
+          },
+          {
+            "filenamePattern": "*.bigbed"
+          },
+          {
+            "filenamePattern": "*.bigBed"
+          },
+          {
+            "filenamePattern": "*.tdf"
+          },
+          {
+            "filenamePattern": "*.2bit"
+          },
+          {
+            "filenamePattern": "*.igv.json"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "igv.editorOption",
+        "displayName": "IGV Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.vcf.gz"
+          },
+          {
+            "filenamePattern": "*.bed"
+          },
+          {
+            "filenamePattern": "*.bed.gz"
+          },
+          {
+            "filenamePattern": "*.gff"
+          },
+          {
+            "filenamePattern": "*.gff3"
+          },
+          {
+            "filenamePattern": "*.gtf"
+          },
+          {
+            "filenamePattern": "*.gff.gz"
+          },
+          {
+            "filenamePattern": "*.gff3.gz"
+          },
+          {
+            "filenamePattern": "*.gtf.gz"
+          },
+          {
+            "filenamePattern": "*.bedgraph"
+          },
+          {
+            "filenamePattern": "*.bedgraph.gz"
+          },
+          {
+            "filenamePattern": "*.bdg"
+          },
+          {
+            "filenamePattern": "*.wig"
+          },
+          {
+            "filenamePattern": "*.vcf"
+          },
+          {
+            "filenamePattern": "*.fa"
+          },
+          {
+            "filenamePattern": "*.fasta"
+          },
+          {
+            "filenamePattern": "*.fna"
+          },
+          {
+            "filenamePattern": "*.fa.gz"
+          },
+          {
+            "filenamePattern": "*.seg"
+          },
+          {
+            "filenamePattern": "*.maf"
+          },
+          {
+            "filenamePattern": "*.mut"
+          },
+          {
+            "filenamePattern": "*.bedpe"
+          },
+          {
+            "filenamePattern": "*.narrowPeak"
+          },
+          {
+            "filenamePattern": "*.broadPeak"
+          },
+          {
+            "filenamePattern": "*.narrowpeak"
+          },
+          {
+            "filenamePattern": "*.broadpeak"
+          }
+        ],
+        "priority": "option"
+      }
+    ]
+  },
+  "scripts": {
+    "vendor": "node scripts/copy-igv.mjs && node scripts/fetch-genomes.mjs",
+    "build": "npm run vendor && node esbuild.mjs",
+    "build:production": "npm run vendor && node esbuild.mjs --production",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p webview/tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "vscode:prepublish": "npm run build:production",
+    "package": "vsce package --no-dependencies",
+    "test:integration": "node esbuild.mjs && vscode-test",
+    "test:contract": "playwright test -c test/contract/playwright.config.ts",
+    "test:perf": "node esbuild.mjs && IGV_PERF=1 vscode-test",
+    "test:e2e-code-server": "node test/e2e-code-server/run.mjs",
+    "test:claude-e2e": "node esbuild.mjs && IGV_CLAUDE_E2E=1 vscode-test --grep \"Claude Code drives\"",
+    "publish:vsce": "vsce publish --no-dependencies",
+    "publish:ovsx": "ovsx publish igv-vscode-*.vsix",
+    "settings-doc": "node scripts/settings-doc.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.0",
+    "igv": "3.8.9",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.85.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.12.0",
+    "glob": "^13.0.6",
+    "mocha": "^12.0.3",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  }
+}

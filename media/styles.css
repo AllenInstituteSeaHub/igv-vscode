@@ -1,0 +1,32 @@
+/* Neutral light frame so igv's light UI does not clash with dark themes (spec §8.3). */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #f4f4f5;
+  color: #1f2328;
+  font-family: var(--vscode-font-family, system-ui, sans-serif);
+}
+#igv-frame {
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 6px 8px 12px;
+  background: #f4f4f5;
+}
+#igv-root {
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  min-height: 120px;
+}
+.igv-container {
+  padding: 2px 4px 6px;
+}
+#igv-status {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #57606a;
+}
+#igv-status[hidden] {
+  display: none;
+}

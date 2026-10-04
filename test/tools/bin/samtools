@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+"""Test shim for a subset of the `samtools` CLI, implemented with pysam.
+
+Supported:
+  samtools --version
+  samtools index [-b|-c] [-m INT] [-@ N] FILE [OUT]
+  samtools faidx FILE [REGION...]
+  samtools view [-b] [-c] [-h] [-H] [-s SEED.FRAC] [-L BED] [-o OUT] [-@ N] [-T REF]
+                [-q MAPQ] [-f FLAG] [-F FLAG] FILE [REGION...]
+
+See test/tools/README.md. Anything else exits 2 with "shim: unsupported".
+"""
+from __future__ import annotations
+
+import bisect
+import os
+import random
+import sys
+
+import pysam
+
+VERSION = "1.21-shim"
+
+
+def die(msg: str, code: int = 1) -> int:
+    print(f"samtools: {msg}", file=sys.stderr)
+    return code
+
+
+def unsupported(what: str) -> int:
+    print(f"shim: unsupported: samtools {what}", file=sys.stderr)
+    return 2
+
+
+# ---------------------------------------------------------------------------
+# index / faidx: pass straight through to the samtools code bundled in pysam
+# ---------------------------------------------------------------------------
+def cmd_index(args: list[str]) -> int:
+    if not args or args[0] in ("-h", "--help"):
+        return die("usage: samtools index [-b|-c] [-m INT] [-@ N] FILE [OUT]", 1)
+    positional = [a for a in args if not a.startswith("-")]
+    if not positional:
+        return die("no input file given")
+    if not os.path.exists(positional[0]):
+        return die(f'failed to open "{positional[0]}": No such file or directory')
+    try:
+        pysam.index(*args)
+    except pysam.utils.SamtoolsError as e:
+        return die(str(e))
+    return 0
+
+
+def cmd_faidx(args: list[str]) -> int:
+    if not args:
+        return die("usage: samtools faidx FILE [REGION...]", 1)
+    if not os.path.exists(args[0]):
+        return die(f'could not open "{args[0]}": No such file or directory')
+    try:
+        out = pysam.faidx(*args)
+    except pysam.utils.SamtoolsError as e:
+        return die(str(e))
+    if out:  # region output goes to stdout
+        sys.stdout.write(out)
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# view
+# ---------------------------------------------------------------------------
+def parse_subsample(spec: str) -> tuple[int, float]:
+    """`-s SEED.FRAC` as in samtools: integer part is the seed, fraction the keep rate."""
+    try:
+        value = float(spec)
+    except ValueError:
+        raise ValueError(f"invalid -s value '{spec}'")
+    if value < 0:
+        raise ValueError(f"invalid -s value '{spec}'")
+    if "." in spec:
+        seed_s, frac_s = spec.split(".", 1)
+        seed = int(seed_s) if seed_s else 0
+        frac = float("0." + frac_s) if frac_s else 0.0
+    else:
+        seed, frac = int(spec), 0.0
+    return seed, frac
+
+
+def load_bed(path: str) -> dict[str, tuple[list[int], list[int]]]:
+    """chrom -> (sorted starts, matching ends) for overlap tests."""
+    ivals: dict[str, list[tuple[int, int]]] = {}
+    with open(path) as fh:
+        for line in fh:
+            if not line.strip() or line.startswith(("#", "track", "browser")):
+                continue
+            f = line.rstrip("\n").split("\t")
+            if len(f) < 3:
+                continue
+            ivals.setdefault(f[0], []).append((int(f[1]), int(f[2])))
+    out = {}
+    for chrom, lst in ivals.items():
+        lst.sort()
+        # merge overlapping intervals so a bisect on starts is enough
+        merged: list[list[int]] = []
+        for s, e in lst:
+            if merged and s <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], e)
+            else:
+                merged.append([s, e])
+        out[chrom] = ([m[0] for m in merged], [m[1] for m in merged])
+    return out
+
+
+def overlaps_bed(bed, chrom: str, start: int, end: int) -> bool:
+    entry = bed.get(chrom)
+    if entry is None:
+        return False
+    starts, ends = entry
+    i = bisect.bisect_right(starts, end - 1)  # last interval starting before read end
+    return i > 0 and ends[i - 1] > start
+
+
+def cmd_view(args: list[str]) -> int:
+    out_bam = False
+    with_header = False
+    header_only = False
+    count_only = False
+    subsample = None
+    bed_path = None
+    out_path = None
+    ref_path = None
+    min_mapq = 0
+    req_flag = 0
+    filt_flag = 0
+    positional: list[str] = []
+
+    i = 0
+    while i < len(args):
+        a = args[i]
+
+        def val() -> str:
+            nonlocal i
+            if i + 1 >= len(args):
+                raise ValueError(f"option {a} requires an argument")
+            i += 1
+            return args[i]
+
+        if a == "-b":
+            out_bam = True
+        elif a == "-c":
+            count_only = True
+        elif a == "-h":
+            with_header = True
+        elif a == "-H":
+            header_only = True
+        elif a == "-s":
+            subsample = parse_subsample(val())
+        elif a == "-L":
+            bed_path = val()
+        elif a == "-o":
+            out_path = val()
+        elif a == "-@" or a == "--threads":
+            val()  # parsed and ignored
+        elif a == "-T" or a == "--reference":
+            ref_path = val()
+        elif a == "-q":
+            min_mapq = int(val())
+        elif a == "-f":
+            req_flag = int(val(), 0)
+        elif a == "-F":
+            filt_flag = int(val(), 0)
+        elif a.startswith("-") and len(a) > 1:
+            return unsupported(f"view {a}")
+        else:
+            positional.append(a)
+        i += 1
+
+    if not positional:
+        return die("usage: samtools view [options] FILE [REGION...]", 1)
+    in_path, regions = positional[0], positional[1:]
+    if not os.path.exists(in_path):
+        return die(f'failed to open "{in_path}" for reading: No such file or directory')
+
+    try:
+        inp = pysam.AlignmentFile(in_path, "r", reference_filename=ref_path, check_sq=False)
+    except (OSError, ValueError) as e:
+        return die(f'failed to open "{in_path}": {e}')
+
+    if header_only:
+        sys.stdout.write(str(inp.header))
+        inp.close()
+        return 0
+
+    if regions and not inp.has_index():
+        inp.close()
+        return die(f'region "{regions[0]}" specifies an unknown reference name or the file '
+                   f'"{in_path}" is not indexed')
+
+    try:
+        bed = load_bed(bed_path) if bed_path else None
+    except OSError as e:
+        return die(f"could not read -L file: {e}")
+
+    rng = random.Random(subsample[0]) if subsample else None
+    frac = subsample[1] if subsample else 1.0
+
+    if regions:
+        def records():
+            for r in regions:
+                yield from inp.fetch(region=r)
+    else:
+        def records():
+            yield from inp.fetch(until_eof=True)
+
+    dest = out_path if out_path else "-"
+    if count_only:
+        writer = None
+        fh = None
+
+        def emit(rec):
+            pass
+    elif out_bam:
+        writer = pysam.AlignmentFile(dest, "wb", template=inp)
+        emit = writer.write
+    elif with_header:
+        writer = pysam.AlignmentFile(dest, "w", template=inp)
+        emit = writer.write
+    else:
+        writer = None
+        fh = open(out_path, "w") if out_path else sys.stdout
+
+        def emit(rec):
+            fh.write(rec.to_string())
+            fh.write("\n")
+
+    n = 0
+    try:
+        for rec in records():
+            if rec.mapping_quality < min_mapq:
+                continue
+            if req_flag and (rec.flag & req_flag) != req_flag:
+                continue
+            if filt_flag and (rec.flag & filt_flag):
+                continue
+            if bed is not None:
+                if rec.is_unmapped or not overlaps_bed(
+                    bed, rec.reference_name, rec.reference_start, rec.reference_end or rec.reference_start + 1
+                ):
+                    continue
+            if rng is not None and not (rng.random() < frac):
+                continue
+            emit(rec)
+            n += 1
+    except ValueError as e:  # bad region etc.
+        if writer is not None:
+            writer.close()
+        return die(str(e))
+    finally:
+        inp.close()
+    if count_only:
+        sys.stdout.write(f"{n}\n")
+        sys.stdout.flush()
+        return 0
+    if writer is not None:
+        writer.close()
+    elif out_path:
+        fh.close()
+    else:
+        sys.stdout.flush()
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    if not argv or argv[0] in ("-h", "--help", "help"):
+        print("Program: samtools (shim; see test/tools/README.md)\n"
+              f"Version: {VERSION}\n\nCommands: index faidx view --version", file=sys.stderr)
+        return 1 if not argv else 0
+    cmd, rest = argv[0], argv[1:]
+    if cmd in ("--version", "version"):
+        print(f"samtools {VERSION}")
+        print(f"Using htslib {pysam.version.__htslib_version__} (pysam {pysam.__version__} shim)")
+        return 0
+    if cmd == "--version-only":
+        print(f"{VERSION}+htslib-{pysam.version.__htslib_version__}")
+        return 0
+    if cmd == "index":
+        return cmd_index(rest)
+    if cmd == "faidx":
+        return cmd_faidx(rest)
+    if cmd == "view":
+        try:
+            return cmd_view(rest)
+        except ValueError as e:
+            return die(str(e))
+    return unsupported(cmd)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run vendor
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run package
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: vsix
+          path: '*.vsix'
+
+  contract-and-integration:
+    name: igv contract + VS Code integration (ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run vendor
+      - name: Generate fixtures
+        run: |
+          python -m pip install --quiet pysam pyBigWig numpy
+          python scripts/make-fixtures.py
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:contract
+      - run: node esbuild.mjs
+      - run: xvfb-run -a npx vscode-test
+
+  code-server-e2e:
+    name: code-server e2e (${{ matrix.version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Recent 4.x and an older 4.10x (spec §11.2). Keep in sync with
+        # DEFAULT_RECENT_VERSION / DEFAULT_OLD_VERSION in test/e2e-code-server/run.mjs.
+        version: ['4.140.0', '4.102.0']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run vendor
+      - name: Generate fixtures
+        run: |
+          python -m pip install --quiet pysam pyBigWig numpy
+          python scripts/make-fixtures.py --skip-large
+      - run: npm run package
+      - run: npx playwright install --with-deps chromium
+      - name: e2e (shim transport)
+        run: node test/e2e-code-server/run.mjs --version ${{ matrix.version }} --mode shim
+      - name: e2e (webviewUri transport)
+        # The older code-server may not serve HTTP range requests for webview
+        # resources; that is exactly what this run is meant to find out, so it is
+        # allowed to fail there. The recent version must pass.
+        continue-on-error: ${{ matrix.version == '4.102.0' }}
+        run: node test/e2e-code-server/run.mjs --version ${{ matrix.version }} --mode webviewUri
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: code-server-e2e-${{ matrix.version }}
+          path: test/e2e-code-server/out/**
+          if-no-files-found: warn

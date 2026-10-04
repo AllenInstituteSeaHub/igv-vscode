@@ -1,0 +1,17 @@
+node_modules/
+dist/
+*.vsix
+.vscode-test/
+media/igv.min.js
+media/igv-version.json
+test/fixtures/generated/
+.igv/
+coverage/
+.DS_Store
+out-test/
+test/fixtures/workspace/.vscode/
+.venv/
+test-results/
+# session files saved at the repo root while trying things out
+/*.igv.json
+.claude/settings.local.json
