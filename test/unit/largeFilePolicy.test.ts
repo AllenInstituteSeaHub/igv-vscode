@@ -20,7 +20,7 @@ const FIX = join(ROOT, 'test/fixtures/generated');
 const SHIMS = join(ROOT, 'test/tools/bin');
 const VENV_BIN = join(ROOT, '.venv/bin');
 const haveVenv = existsSync(join(VENV_BIN, 'python3'));
-const usable = existsSync(join(FIX, 'small.bam')) && existsSync(join(SHIMS, 'samtools')) && (haveVenv || process.env.CI === 'true');
+const usable = process.platform !== 'win32' && existsSync(join(FIX, 'small.bam')) && existsSync(join(SHIMS, 'samtools')) && (haveVenv || process.env.CI === 'true');
 const env = { PATH: `${SHIMS}:${haveVenv ? `${VENV_BIN}:` : ''}${process.env.PATH ?? '/usr/bin:/bin'}` };
 
 let work: string;

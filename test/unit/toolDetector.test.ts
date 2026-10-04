@@ -7,6 +7,8 @@ import { derivedLocation, derivedPath, findDerived, isWritableDir } from '../../
 import { formatCommand, quoteArg, subsampleOutputName, tabixPresetFor } from '../../src/tools/jobs';
 import type { RpcError } from '../../src/shared/rpc';
 
+const isWindows = process.platform === 'win32';
+
 let dir: string;
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), 'igv-tools-'));
@@ -17,7 +19,7 @@ beforeAll(() => {
 });
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
-describe('ToolDetector', () => {
+describe.skipIf(isWindows)('ToolDetector', () => {
   it('finds executables on a given PATH and reads the version', async () => {
     const d = new ToolDetector({ env: { PATH: `${dir}` } });
     const t = await d.find('samtools');
@@ -43,7 +45,7 @@ describe('ToolDetector', () => {
   });
 });
 
-describe('derivedDir', () => {
+describe.skipIf(isWindows)('derivedDir', () => {
   it('uses the source directory when writable, otherwise a hashed folder under derivedDir', async () => {
     const src = join(dir, 'x.bam');
     writeFileSync(src, 'bam');

@@ -52,7 +52,18 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:contract
       - run: node esbuild.mjs
-      - run: xvfb-run -a npx vscode-test
+      - name: VS Code integration tests
+        run: xvfb-run -a npx vscode-test 2>&1 | tee integration.log; exit ${PIPESTATUS[0]}
+        shell: bash
+      - name: Integration failure summary
+        if: failure()
+        run: grep -nE "TEST FAILURE|AssertionError|[0-9]+\) |passing|failing|Error:" integration.log | head -80
+        shell: bash
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-log
+          path: integration.log
 
   code-server-e2e:
     name: code-server e2e (${{ matrix.version }})

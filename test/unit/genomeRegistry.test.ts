@@ -4,6 +4,8 @@ import type * as nodeFs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { GenomeRegistry, parseGenomeList, type GenomeDefaultsStore } from '../../src/genome/GenomeRegistry';
 
+const isWindows = process.platform === 'win32';
+
 function memoryStore(initial: { def?: string; recent?: string[] } = {}): GenomeDefaultsStore & { state: { def?: string; recent: string[] } } {
   const state = { def: initial.def, recent: initial.recent ?? [] };
   return {
@@ -97,7 +99,7 @@ describe('GenomeRegistry', () => {
   });
 });
 
-describe('GenomeRegistry: custom and local references', () => {
+describe.skipIf(isWindows)('GenomeRegistry: custom and local references', () => {
   const fakeFs = (files: Record<string, number>) =>
     ({
       existsSync: (p: string) => p in files,

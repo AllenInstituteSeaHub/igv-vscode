@@ -434,6 +434,12 @@ Remaining for the human (subjective): items 5 and 7 below, plus a look at the tr
 - README lets a new user install, open a BAM, set up Claude Code, get an agent snapshot: written; please judge the "under 5 minutes" claim.
 - Data safety: the webview can only read allow-listed files (per-viewer file ids; verified in `m1`); the control channel is a 0600 socket, token-authenticated (`controlChannel` unit, `m4-cli` bad-token test); absolute paths never enter the webview (markers hydrated to opaque handles).
 
+### First CI runs (2026-10-04, GitHub Actions on `AllenInstituteSeaHub/igv-vscode`)
+
+- **code-server e2e: passed** on 4.140.0 and 4.102.0, in both the shim and the `webviewUri` transport, with system node removed from the image. H7 and the M4 "CLI without a system node" criterion are now observed on real code-server (CI). Range support for `asWebviewUri` is present on 4.102.0 as well.
+- `check` job: ubuntu and macOS pass (typecheck, lint, unit, package). **Windows: `npm test` failed.** Logs are not downloadable without a token; the step list points at the unit tests. Suites that model a POSIX filesystem (`/ws/...` fake fs), Unix socket modes, exec bits/symlinks and the pysam shell shims now `skipIf(win32)` with comments. Windows therefore has lighter unit coverage; the extension's own code uses `path`/named pipes correctly, but Windows has not been exercised end to end (no Windows machine here).
+- `contract-and-integration`: the contract tests passed; the `vscode-test` step failed. The workflow now prints a failure summary and uploads `integration.log` as an artifact so the cause can be read.
+
 ### Open items for the human before a release
 
 1. Push the repo to GitHub (nothing is committed yet) and watch the three workflows; fix whatever Linux/Windows reveal.

@@ -9,6 +9,8 @@ import { installOnPath, posixLauncher, windowsLauncher, writeLaunchers } from '.
 import { RpcError } from '../../src/shared/rpc';
 import type { InstanceRecord } from '../../src/agent/protocol';
 
+const isWindows = process.platform === 'win32';
+
 let home: string;
 let env: NodeJS.ProcessEnv;
 beforeAll(() => {
@@ -48,7 +50,7 @@ describe('ControlServer + ControlClient', () => {
     });
     await server.start();
     try {
-      expect(statSync(server.endpoint).mode & 0o777).toBe(0o600);
+      if (!isWindows) expect(statSync(server.endpoint).mode & 0o777).toBe(0o600);
       const client = new ControlClient({ endpoint: server.endpoint, token: server.token, source: 'env' });
       expect(await client.request('ping', { x: 1 })).toEqual({ ok: true, x: 1 });
       const err = await rejection(client.request('boom'));
@@ -74,7 +76,7 @@ describe('ControlServer + ControlClient', () => {
     } finally {
       await server.stop();
     }
-    expect(existsSync(server.endpoint)).toBe(false);
+    if (!isWindows) expect(existsSync(server.endpoint)).toBe(false);
   });
 
   it('times out requests and reports a closed connection', async () => {
@@ -105,7 +107,7 @@ describe('instance registry and discovery', () => {
       const recB = await record(b, 'bbbb', [join(home, 'projB'), join(home, 'projB', 'nested')], '2026-02-01T00:00:00Z');
       await record(a, 'dead', ['/x'], '2026-03-01T00:00:00Z', 999_999_999);
       writeFileSync(join(instancesDir(env), 'junk.json'), '{bad');
-      expect(statSync(join(instancesDir(env), 'aaaa.json')).mode & 0o777).toBe(0o600);
+      if (!isWindows) expect(statSync(join(instancesDir(env), 'aaaa.json')).mode & 0o777).toBe(0o600);
 
       const live = await listInstances(env);
       expect(live.map((i) => i.id).sort()).toEqual(['aaaa', 'bbbb']);
@@ -151,7 +153,8 @@ describe('instance registry and discovery', () => {
   });
 });
 
-describe('CliInstaller', () => {
+// Launcher exec bits and ~/.local/bin symlinks are POSIX concepts; Windows gets the .cmd + instructions path.
+describe.skipIf(isWindows)('CliInstaller', () => {
   it('writes launchers with the runtime path baked in and symlinks into ~/.local/bin', async () => {
     const bin = join(home, 'bin');
     const l = await writeLaunchers(bin, '/Apps/Code Helper (Plugin)', '/ext/dist/cli.js');

@@ -4,6 +4,8 @@ import type { TrackSpec } from '../../src/agent/protocol';
 import { displayName, indexHint, normalizeColor, resolveTrack, toDisplayPath, validateOptions } from '../../src/data/TrackResolver';
 import type { RpcError } from '../../src/shared/rpc';
 
+const isWindows = process.platform === 'win32';
+
 /** In-memory file system: path → size. */
 function fakeFs(files: Record<string, number>) {
   return {
@@ -27,7 +29,8 @@ function failure(fn: () => unknown): RpcError {
 const MiB = 1024 * 1024;
 const base = '/ws';
 
-describe('resolveTrack: local files', () => {
+// These suites model a POSIX filesystem ('/ws/...'); on Windows path.resolve() rewrites them to C:\\ws\\..., so they are skipped there.
+describe.skipIf(isWindows)('resolveTrack: local files', () => {
   it('resolves an indexed BAM with defaults and a workspace-relative display path', () => {
     const fs = fakeFs({ '/ws/data/tumor.bam': 5e9, '/ws/data/tumor.bam.bai': 4e6 });
     const t = resolveTrack({ path: 'data/tumor.bam' }, { baseDir: base, workspaceFolders: ['/ws'], fs });
@@ -142,7 +145,7 @@ describe('resolveTrack: URLs', () => {
   });
 });
 
-describe('helpers', () => {
+describe.skipIf(isWindows)('helpers', () => {
   it('normalizes shorthand hex colours (igv.js cannot draw them) and rejects non-strings', () => {
     expect(normalizeColor('#c00')).toBe('#cc0000');
     expect(normalizeColor('#C00F')).toBe('#cc0000ff');

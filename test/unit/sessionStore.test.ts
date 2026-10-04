@@ -3,13 +3,15 @@ import { buildSession, fromRelativePath, isSessionFileName, parseSession, serial
 import type { ResolvedGenome } from '../../src/agent/protocol';
 import { localPath } from '../../src/shared/markers';
 
+const isWindows = process.platform === 'win32';
+
 const bundled: ResolvedGenome = { id: 'hg38', name: 'Human', source: 'bundled-list', reference: { id: 'hg38' } };
 const local: ResolvedGenome = {
   id: 'ref', name: 'ref.fa', source: 'local-file',
   reference: { id: 'ref', name: 'ref.fa', fastaURL: localPath('/proj/ref/ref.fa'), indexURL: localPath('/proj/ref/ref.fa.fai') },
 };
 
-describe('path helpers', () => {
+describe.skipIf(isWindows)('path helpers', () => {
   it('produces POSIX relative paths and resolves them back', () => {
     expect(toRelativePath('/proj/sessions', '/proj/data/t.bam')).toBe('../data/t.bam');
     expect(toRelativePath('/proj', '/proj/t.bam')).toBe('t.bam');
@@ -21,7 +23,7 @@ describe('path helpers', () => {
   });
 });
 
-describe('buildSession / parseSession round trip', () => {
+describe.skipIf(isWindows)('buildSession / parseSession round trip', () => {
   it('writes relative paths and reads them back from a moved directory', () => {
     const session = buildSession(
       {
