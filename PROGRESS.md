@@ -450,6 +450,10 @@ Automated Marketplace publishing is blocked: creating the Azure DevOps PAT needs
 - Tag `v0.1.0` pushed; Release workflow run 37233050402 succeeded: VSIX built, GitHub Release created with `igv-vscode-0.1.0.vsix` (637 KB) attached (https://github.com/AllenInstituteSeaHub/igv-vscode/releases/tag/v0.1.0).
 - Publish job: VS Marketplace step skipped (no `VSCE_PAT`, as intended; manual upload). **Open VSX: published** — `alleninstituteseahub.igv-vscode` 0.1.0 is live (https://open-vsx.org/extension/alleninstituteseahub/igv-vscode); the listing appeared a few minutes after the upload. The namespace is still unverified on Open VSX (cosmetic warning badge; verification is a separate request on open-vsx.org).
 
+### Marketplace build verified (2026-10-04)
+
+`alleninstituteseahub.igv-vscode` 0.1.0 is listed on the VS Marketplace (uploaded by hand) and on Open VSX (published by the Release workflow). The Marketplace copy was installed into an isolated VS Code (`--user-data-dir`/`--extensions-dir` under `~/igv-vscode-marketplace-test`), the window opened on the fixtures folder, and the build activated on startup, registered its control channel and wrote its launcher without any manual step. Through that launcher (`--instance 377c661b12dd`): ping (0.1.0, igv 3.8.9, VS Code 1.140.0), open with two tracks and a track option, add bigWig + VCF, live update (displayMode/height), goto, PNG snapshot (valid signature; reads drawn in the chosen colour, SQUISHED), SVG snapshot (4064 rects), state --verbose (12 reads, 141 KB, p50 0.42 ms), session save → remove → close → load (4 tracks and locus restored), `FILE_NOT_FOUND` and `GENOME_NOT_FOUND` errors. All as expected; the viewer was left open for the human to inspect.
+
 ### Open items for the human before a release
 
 1. ~~Push the repo~~ done; CI green. ~~Publisher id~~ `alleninstituteseahub`.
