@@ -430,7 +430,7 @@ Remaining for the human (subjective): items 5 and 7 below, plus a look at the tr
 ### Definition of done (spec §16) — status
 
 - All milestones accepted: yes (M0-M5 human-accepted; M6 automated).
-- CI green on three OSes plus code-server e2e: **pending** — the repository has not been pushed to GitHub yet, so the workflows have never run. First push will tell.
+- CI green on three OSes plus code-server e2e on two versions: **met** (run 37224466595 on 2026-10-04).
 - README lets a new user install, open a BAM, set up Claude Code, get an agent snapshot: written; please judge the "under 5 minutes" claim.
 - Data safety: the webview can only read allow-listed files (per-viewer file ids; verified in `m1`); the control channel is a 0600 socket, token-authenticated (`controlChannel` unit, `m4-cli` bad-token test); absolute paths never enter the webview (markers hydrated to opaque handles).
 
@@ -438,11 +438,12 @@ Remaining for the human (subjective): items 5 and 7 below, plus a look at the tr
 
 - **code-server e2e: passed** on 4.140.0 and 4.102.0, in both the shim and the `webviewUri` transport, with system node removed from the image. H7 and the M4 "CLI without a system node" criterion are now observed on real code-server (CI). Range support for `asWebviewUri` is present on 4.102.0 as well.
 - `check` job: ubuntu and macOS pass (typecheck, lint, unit, package). **Windows: `npm test` failed.** Logs are not downloadable without a token; the step list points at the unit tests. Suites that model a POSIX filesystem (`/ws/...` fake fs), Unix socket modes, exec bits/symlinks and the pysam shell shims now `skipIf(win32)` with comments. Windows therefore has lighter unit coverage; the extension's own code uses `path`/named pipes correctly, but Windows has not been exercised end to end (no Windows machine here).
-- `contract-and-integration`: the contract tests passed; the `vscode-test` step failed. The workflow now prints a failure summary and uploads `integration.log` as an artifact so the cause can be read.
+- `contract-and-integration`: the contract tests passed; the `vscode-test` step failed in the first two runs. The workflow now prints a failure summary and uploads `integration.log` as an artifact so a recurrence can be read.
+- **Third run (commit `cecd8d3`, run 37224466595): all six jobs green** — check on ubuntu/macos/windows, contract + VS Code integration on ubuntu (so the earlier integration failure did not reproduce; treat it as flaky until the log of a recurrence says otherwise), code-server e2e on 4.140.0 and 4.102.0.
 
 ### Open items for the human before a release
 
-1. Push the repo to GitHub (nothing is committed yet) and watch the three workflows; fix whatever Linux/Windows reveal.
-2. Decide the publisher id and GitHub org; replace `igv-vscode-dev` in `package.json` (`publisher`, `repository`, `bugs`, `homepage`) and in the README/CodeOcean snippet.
-3. Optionally try the extension on a real CodeOcean capsule (H7) and record the perf numbers there.
-4. Bump the version (`0.1.0` suggested) and move the CHANGELOG "Unreleased" entries under it before tagging.
+1. ~~Push the repo~~ done; CI green. ~~Publisher id~~ `alleninstituteseahub`.
+2. Add the `VSCE_PAT` and `OVSX_PAT` secrets to the GitHub repo (Settings → Secrets → Actions) once the Marketplace publisher and Open VSX namespace exist.
+3. Optionally try the extension on a real CodeOcean capsule and record the perf numbers there (the code-server e2e covers the mechanics).
+4. Bump the version (`0.1.0` suggested), move the CHANGELOG "Unreleased" entries under it, tag `v0.1.0` (builds the VSIX and drafts the GitHub Release), then run the Release workflow's `publish` job manually when ready.
