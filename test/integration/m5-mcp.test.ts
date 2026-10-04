@@ -15,7 +15,7 @@ const FIXTURES = resolve(__dirname, '../../test/fixtures/generated');
 const fx = (n: string) => join(FIXTURES, n);
 
 async function getApi(): Promise<IgvExtensionApi> {
-  const ext = vscode.extensions.getExtension<IgvExtensionApi>('igv-vscode-dev.igv-vscode');
+  const ext = vscode.extensions.getExtension<IgvExtensionApi>('alleninstituteseahub.igv-vscode');
   assert.ok(ext);
   return ext.activate();
 }

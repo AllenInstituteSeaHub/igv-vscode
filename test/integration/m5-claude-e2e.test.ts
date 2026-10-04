@@ -25,7 +25,7 @@ suite('Claude Code drives IGV through MCP (IGV_CLAUDE_E2E=1)', function () {
   });
 
   test('opens the BAM, snapshots, describes the SNP and explains an empty wide view', async () => {
-    const ext = vscode.extensions.getExtension<IgvExtensionApi>('igv-vscode-dev.igv-vscode');
+    const ext = vscode.extensions.getExtension<IgvExtensionApi>('alleninstituteseahub.igv-vscode');
     const api = await ext!.activate();
     for (let i = 0; i < 50 && !api.agent.enabled; i++) await new Promise((r) => setTimeout(r, 100));
     assert.ok(api.agent.enabled);

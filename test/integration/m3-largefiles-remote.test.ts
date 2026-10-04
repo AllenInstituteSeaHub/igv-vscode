@@ -8,7 +8,7 @@ import * as vscode from 'vscode';
 import type { IgvExtensionApi } from '../../src/extension';
 import type { RpcError } from '../../src/shared/rpc';
 
-const EXTENSION_ID = 'igv-vscode-dev.igv-vscode';
+const EXTENSION_ID = 'alleninstituteseahub.igv-vscode';
 const ROOT = resolve(__dirname, '../..');
 const FIXTURES = join(ROOT, 'test/fixtures/generated');
 const fx = (name: string) => join(FIXTURES, name);

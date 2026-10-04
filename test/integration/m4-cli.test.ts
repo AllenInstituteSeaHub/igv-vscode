@@ -11,7 +11,7 @@ import { join, resolve } from 'node:path';
 import * as vscode from 'vscode';
 import type { IgvExtensionApi } from '../../src/extension';
 
-const EXTENSION_ID = 'igv-vscode-dev.igv-vscode';
+const EXTENSION_ID = 'alleninstituteseahub.igv-vscode';
 const FIXTURES = resolve(__dirname, '../../test/fixtures/generated');
 const fx = (n: string) => join(FIXTURES, n);
 

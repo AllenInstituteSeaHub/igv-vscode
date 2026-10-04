@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { IgvExtensionApi } from '../../src/extension';
 
-const EXTENSION_ID = 'igv-vscode-dev.igv-vscode';
+const EXTENSION_ID = 'alleninstituteseahub.igv-vscode';
 
 async function getApi(): Promise<IgvExtensionApi> {
   const ext = vscode.extensions.getExtension<IgvExtensionApi>(EXTENSION_ID);

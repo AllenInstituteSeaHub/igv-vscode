@@ -4,7 +4,7 @@ Build log for igv-vscode, kept per the spec (§0 item 3). Each milestone records
 
 ## Open questions for the human
 
-- **Publisher id** (`package.json` `publisher`, spec §1.1): placeholder `igv-vscode-dev` stays in use until the human registers a Marketplace/Open VSX publisher (in progress 2026-10-04). The GitHub repository is `AllenInstituteSeaHub/igv-vscode` (created 2026-10-04); `repository`, `bugs` and `homepage` point there.
+- **Publisher id** (`package.json` `publisher`, spec §1.1): decided 2026-10-04: `alleninstituteseahub` (extension id `alleninstituteseahub.igv-vscode`). GitHub repository `AllenInstituteSeaHub/igv-vscode`. The `igv-vscode-dev` placeholder is gone from the code; the release workflow still refuses to release under it.
 - **License copyright holder**: `LICENSE` says "igv-vscode contributors". Change if you want a named holder.
 - **Local toolchain**: `samtools`, `tabix`, `bgzip`, and the Python `pysam`/`pyBigWig` packages are not installed on this machine. The fixture generator (M1) and the ToolDetector jobs (M3) need them for local testing. `conda install -c bioconda samtools htslib pysam pybigwig` would cover it.
 

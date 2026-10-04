@@ -10,7 +10,7 @@ import { join, resolve } from 'node:path';
 import * as vscode from 'vscode';
 import type { IgvExtensionApi } from '../../src/extension';
 
-const EXTENSION_ID = 'igv-vscode-dev.igv-vscode';
+const EXTENSION_ID = 'alleninstituteseahub.igv-vscode';
 const FIXTURES = resolve(__dirname, '../../test/fixtures/generated');
 const fx = (name: string) => join(FIXTURES, name);
 const PERF_BAM = process.env.IGV_PERF_BAM ?? fx('perf.bam');

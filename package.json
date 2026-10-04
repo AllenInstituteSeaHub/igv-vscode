@@ -3,7 +3,7 @@
   "displayName": "IGV Viewer for VS Code (unofficial)",
   "description": "Embed the igv.js genome browser in VS Code. View BAM, CRAM, VCF, bigWig, BED and more next to your code, with a CLI and MCP server for AI agents.",
   "version": "0.0.1",
-  "publisher": "igv-vscode-dev",
+  "publisher": "alleninstituteseahub",
   "license": "MIT",
   "private": true,
   "repository": {

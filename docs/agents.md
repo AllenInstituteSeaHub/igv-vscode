@@ -50,7 +50,7 @@ Write an `.igv.json` session (see README) and run `code analysis.igv.json`; the 
 1. In VS Code run **IGV: Copy MCP Setup Command**. It copies a command with the absolute launcher path, e.g.
 
    ```sh
-   claude mcp add igv -- '/Users/you/Library/Application Support/Code/User/globalStorage/igv-vscode-dev.igv-vscode/bin/igv-vscode' mcp
+   claude mcp add igv -- '/Users/you/Library/Application Support/Code/User/globalStorage/alleninstituteseahub.igv-vscode/bin/igv-vscode' mcp
    ```
 
    If `igv-vscode` is on your PATH (**IGV: Install CLI on PATH**), `claude mcp add igv -- igv-vscode mcp` works too.
@@ -64,7 +64,7 @@ The MCP server finds the VS Code window the same way the CLI does (environment v
 Any stdio MCP client can run `igv-vscode mcp` (or the launcher path). Example Claude Desktop / generic config:
 
 ```json
-{ "mcpServers": { "igv": { "command": "/path/to/globalStorage/igv-vscode-dev.igv-vscode/bin/igv-vscode", "args": ["mcp"] } } }
+{ "mcpServers": { "igv": { "command": "/path/to/globalStorage/alleninstituteseahub.igv-vscode/bin/igv-vscode", "args": ["mcp"] } } }
 ```
 
 ## Troubleshooting
