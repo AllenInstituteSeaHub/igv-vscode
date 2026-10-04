@@ -448,7 +448,7 @@ Automated Marketplace publishing is blocked: creating the Azure DevOps PAT needs
 ### Release v0.1.0 (2026-10-04)
 
 - Tag `v0.1.0` pushed; Release workflow run 37233050402 succeeded: VSIX built, GitHub Release created with `igv-vscode-0.1.0.vsix` (637 KB) attached (https://github.com/AllenInstituteSeaHub/igv-vscode/releases/tag/v0.1.0).
-- Publish job: VS Marketplace step skipped (no `VSCE_PAT`, as intended; manual upload); "Publish to Open VSX" step reported success. Open VSX namespace `alleninstituteseahub` exists (unverified) — listing visibility being confirmed.
+- Publish job: VS Marketplace step skipped (no `VSCE_PAT`, as intended; manual upload). **Open VSX: published** — `alleninstituteseahub.igv-vscode` 0.1.0 is live (https://open-vsx.org/extension/alleninstituteseahub/igv-vscode); the listing appeared a few minutes after the upload. The namespace is still unverified on Open VSX (cosmetic warning badge; verification is a separate request on open-vsx.org).
 
 ### Open items for the human before a release
 
